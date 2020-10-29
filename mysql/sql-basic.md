@@ -15,7 +15,6 @@
 # 基础操作
 
 假设表 `tb_student` 的结构如下：
-
 id|name|gender|birth
 --|--|--|--
 1|Zhang|M|1990-10-01
