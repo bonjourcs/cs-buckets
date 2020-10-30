@@ -182,4 +182,198 @@ FROM t2 RIGHT JOIN t1
 ON t1.col1 = t2.col1
 ```
 
+- UNION: 组合查询
+```sql
+SELECT t1.col1, t1.col2
+FROM t1
+WHERE t1.col1 = 'some_value'
+UNION
+SELECT t1.col1, t1.col2
+WHERE t1.col2 = 'some_value';
+```
+上面的 SQL 会将两条查询的结果合并。
+**注意** 使用 UNION 有一些限制条件
 
+- 必须是两条以上的 SQL 才可以
+- 每条 SQL 拥有相同的列、表达式或者聚合表达式
+- 列的类型必须兼容
+
+默认情况下，UNION 是会取消重复行，如果不需要自动取消，使用 UNION ALL 提到 UNION
+
+# 基础数据操作
+
+## 数据插入
+
+- 插入指定行
+```sql
+INSERT INTO t1(col1, col2, col3)
+VALUE
+('value1', 'value2', 'value3'),
+('value1', 'value2', 'value3');
+```
+
+- 插入选出的行
+```sql
+INSERT INTO t1(col1, col2, col3)
+SELECT col1, col2, col3
+FROM t2;
+```
+
+- 复制表
+```sql
+CREATE TABLE t1_copy AS 
+SELECT * FROM t1;
+```
+
+## 数据更新
+```sql
+UPDATE TABLE t1
+SET col1='value1', col2='value2'
+WHERE col1='some-value';
+```
+
+## 数据删除
+```sql
+DELETE FORM t1
+WHERE col1='some-value';
+```
+
+## 数据表创建
+```sql
+CREATE TABLE t1(
+    id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    col1 VARCHAR(100) NOT NULL DEFAULT '-',
+    col2 DATETIME NOT NULL DEFUALT CURRENT_TIMESTAMP 
+)
+```
+
+## 数据表更改
+```sql
+ALTER TABLE t1 DROP COLUMN  col1;
+```
+
+## 试图的创建
+```sql
+CREATE VIEW AS 
+SELECT t1.col1, t1.col2, t2.col1
+FROM t1 INNER JOIN
+t2 ON t1.col1 = t2.col2;
+```
+
+# 存储过程
+
+## 创建存储过程
+```sql
+CREATE PROCEDURE count_student(IN id INTEGER)
+BEGIN
+    SELECT COUNT(*) FROM tb_student
+    WHERE id < id;
+END$;
+```
+
+## 调用存储过程
+```sql
+CALL count_student(1);
+```
+
+## 使用游标
+使用游标可以处理存储过程的结果集，下面是在 MySQL 中使用游标的示例：
+```sql
+CREATE PROCEDURE build_email_list (INOUT email_list varchar(1000))
+BEGIN
+    DECLARE v_finished INTEGER DEFAULT 0;
+    DECLARE v_email VARCHAR(100) DEFAULT "";
+    DECLARE email_cursor CURSOR FOR 
+        SELECT email FROM tb_employee;
+    DECLARE CONTINUE HANDLER FOR 
+        NOT FOUND SET v_finished = 1;
+    OPEN email_cursor;
+    get_mail: LOOP
+    FETCH email_cursor INTO v_email;
+    IF v_finished = 1 THEN
+        LEAVE get_email;
+    END IF; 
+    SET email_list = CONCAT(v_email, ";", email_list);
+    END LOOP get_email;
+    CLOSE email_cursor;
+END;
+```
+可以通过下面的 SQL 语句进行调用：
+```sql
+SET @email_list="";
+CALL build_email_list(@email_list);
+SELECT @email_list;
+```
+# 事务
+
+事务需要满足四个条件：
+
+- 原子性(Atomicity)
+- 一致性(Consistency)
+- 隔离性(Isolation)
+- 持久性(Durability)
+
+MySQL 中事务相关的关键字
+
+- BEGIN/START TRANSACTION: 开启事务
+- COMMIT: 提交事务
+- ROLLBACK: 事务回滚
+- SAVEPOINT: 事务保留点，用于回滚到此处
+
+下面是 MySQL 在命令提示符下的使用事务的示例:
+
+```shell script
+mysql> set autocommit=0;
+mysql> begin;
+mysql> delete from tb_student where id = 1;
+mysql> rollback;
+mysql> select * from tb_student where id = 1;
+```
+
+# 高级 SQL 特性
+
+## 约束
+
+约束是用来保障数据表中数据的有效性。
+
+```sql
+CREATE TABLE tb_demo(
+    id INT PRIMARY KEY NOT NULL,
+    email VARCHAR(100) UNIQUE
+)
+```
+也可以为表增加约束
+```sql
+ALETR TABLE tb_demo ADD CONSTARINT unq_demo_email UNIQUE(email);
+```
+使用下面语句删除约束
+```sql
+ALTER TABLE tb_demo DROP INDEX unq_demo_email;
+```
+
+## 索引
+
+使用下面语句为 tb_demo 表的 email 字段创建索引
+```sql
+ALTER TABLE tb_demo ADD INDEX idx_email(email);
+```
+
+下面的语句删除该索引
+```sql
+ALTER TABLE tb_demo DROP INDEX idx_email;
+```
+
+## 触发器
+
+触发器可以在执行 SQL 语句时进行额外的操作。下面是创建触发器的示例：
+```sql
+CREATE TRIGGER t_upper AFTER INSESRT
+ON tb_demo FOR EACH ROW
+BEGIN
+    -- 这里是业务逻辑
+END;
+```
+删除触发器使用下面的语句：
+```sql
+DROP TRIGGER t_upper;
+```
